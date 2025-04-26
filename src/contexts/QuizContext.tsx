@@ -5,7 +5,7 @@ import { SAMPLE_MCQS } from '@/data/sampleMCQs';
 import { callLLMAgent } from '@/services/llmService';
 
 // Agent Prompts
-const COMPREHENSION_PROMPT = `You are the Comprehension Agent. Your job is to:
+export const COMPREHENSION_PROMPT = `You are the Comprehension Agent. Your job is to:
 1. Rephrase the question in simpler words.
 2. Confirm the student's understanding.
 3. If not understood, provide an analogy or stepwise logic.
@@ -16,18 +16,18 @@ const COMPREHENSION_PROMPT = `You are the Comprehension Agent. Your job is to:
 
 Be conversational, friendly, and encouraging. Your goal is to make the question accessible without giving away the answer.`;
 
-const CONFIDENCE_PROMPT = `You are the Confidence Agent. You ask the student how sure they feel
+export const CONFIDENCE_PROMPT = `You are the Confidence Agent. You ask the student how sure they feel
 about their upcoming answer and map it to a confidence level.
 
 Be brief but encouraging. Help the student reflect on their confidence honestly.`;
 
-const DEPTH_CHECKER_PROMPT = `You are the Depth Checker Agent. You ask whether the student:
+export const DEPTH_CHECKER_PROMPT = `You are the Depth Checker Agent. You ask whether the student:
 a) glanced at every option
 b) understands what each option means
 
 Be brief but thorough. Help the student ensure they've properly considered all options before submitting.`;
 
-const CORRECTION_PROMPT = `You are the Correction Agent. Upon an incorrect answer:
+export const CORRECTION_PROMPT = `You are the Correction Agent. Upon an incorrect answer:
 1. Gently flag the mistake.
 2. Ask a Socratic hint question.
 3. Diagnose the confusion type: Guess, Half-logic, or Misconception.
@@ -36,14 +36,14 @@ const CORRECTION_PROMPT = `You are the Correction Agent. Upon an incorrect answe
 
 Be supportive and focus on learning, not the mistake itself.`;
 
-const REFLECTION_PROMPT = `You are the Reflection Agent. After a correct (or corrected) attempt:
+export const REFLECTION_PROMPT = `You are the Reflection Agent. After a correct (or corrected) attempt:
 1. Ask what helped them arrive at the right answer.
 2. Reinforce the effective strategy.
 3. Motivate self-reflection on learning.
 
 Make your response conversational and focused on building good learning habits.`;
 
-const SCHEDULER_PROMPT = `You are the Scheduler Agent. Based on confidence and correctness:
+export const SCHEDULER_PROMPT = `You are the Scheduler Agent. Based on confidence and correctness:
 - If Low confidence or incorrect → schedule in 1 day.
 - If High confidence and correct → schedule in 7 days.
 Ask for delivery preference, then log the plan.
@@ -72,8 +72,6 @@ const initialState: QuizState = {
 
 function quizReducer(state: QuizState, action: QuizAction): QuizState {
   switch (action.type) {
-    case 'SET_TOPIC':
-      return { ...state, topic: action.payload };
     case 'SET_UNDERSTOOD':
       return { ...state, understood: action.payload };
     case 'SET_SELECTED_OPTION':
@@ -129,6 +127,15 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
   }
 }
 
+// Create the context with proper typing
+interface QuizContextType {
+  state: QuizState;
+  dispatch: React.Dispatch<QuizAction>;
+  callAgent: (agentName: string, prompt: string, inputs: string) => Promise<string>;
+}
+
+const QuizContext = createContext<QuizContextType | undefined>(undefined);
+
 export function QuizProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(quizReducer, initialState);
 
@@ -145,7 +152,7 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useQuiz() {
+export function useQuiz(): QuizContextType {
   const context = useContext(QuizContext);
   if (!context) {
     throw new Error('useQuiz must be used within a QuizProvider');

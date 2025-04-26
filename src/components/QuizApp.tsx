@@ -6,6 +6,12 @@ import { Card } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  COMPREHENSION_PROMPT,
+  DEPTH_CHECKER_PROMPT, 
+  CORRECTION_PROMPT,
+  SCHEDULER_PROMPT
+} from '@/contexts/QuizContext';
 
 export function QuizApp() {
   const { state, dispatch, callAgent } = useQuiz();
