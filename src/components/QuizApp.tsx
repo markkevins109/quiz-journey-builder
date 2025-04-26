@@ -6,18 +6,14 @@ import { Card } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  COMPREHENSION_PROMPT,
-  DEPTH_CHECKER_PROMPT, 
-  CORRECTION_PROMPT,
-  SCHEDULER_PROMPT
-} from '@/contexts/QuizContext';
+import { COMPREHENSION_PROMPT, DEPTH_CHECKER_PROMPT, CORRECTION_PROMPT, SCHEDULER_PROMPT } from '@/contexts/QuizContext';
 
 export function QuizApp() {
   const { state, dispatch, callAgent } = useQuiz();
   const { toast } = useToast();
   const [agentResponse, setAgentResponse] = useState<string>('');
   const [showUnderstandingPrompt, setShowUnderstandingPrompt] = useState(true);
+  const [showOptions, setShowOptions] = useState(false);
   const [showConfidencePrompt, setShowConfidencePrompt] = useState(false);
   const [showDepthCheck, setShowDepthCheck] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
@@ -32,6 +28,8 @@ export function QuizApp() {
         `Question: "${state.currentQuestion.question}"\nOptions: ${state.currentQuestion.options.join(', ')}`
       );
       setAgentResponse(response);
+    } else {
+      setShowOptions(true);
     }
     setShowUnderstandingPrompt(false);
   };
@@ -39,6 +37,7 @@ export function QuizApp() {
   const handleOptionSelect = async (value: string) => {
     dispatch({ type: 'SET_SELECTED_OPTION', payload: value });
     setShowConfidencePrompt(true);
+    setShowOptions(false);
     setAgentResponse('');
   };
 
@@ -61,7 +60,6 @@ export function QuizApp() {
     setShowDepthCheck(false);
 
     if (depthCheckResult === 'Thorough') {
-      // Check if answer is correct
       const isCorrect = state.selectedOption === state.currentQuestion.answer;
       dispatch({ type: 'SET_OUTCOME', payload: isCorrect ? 'Correct' : 'Incorrect' });
 
@@ -107,8 +105,8 @@ export function QuizApp() {
     });
 
     dispatch({ type: 'NEXT_QUESTION' });
-    setShowScheduler(false);
     setShowUnderstandingPrompt(true);
+    setShowOptions(false);
     setAgentResponse('');
   };
 
@@ -139,7 +137,7 @@ export function QuizApp() {
             </div>
           )}
 
-          {!showUnderstandingPrompt && !showConfidencePrompt && !showDepthCheck && !showReflection && !showScheduler && (
+          {showOptions && (
             <RadioGroup
               onValueChange={handleOptionSelect}
               value={state.selectedOption}
