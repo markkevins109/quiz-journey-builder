@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { QuizState } from '@/types/quiz';
+import { QuizState, QuizAction } from '@/types/quiz';
 import { SAMPLE_MCQS } from '@/data/sampleMCQs';
 import { callLLMAgent } from '@/services/llmService';
 
@@ -50,17 +50,6 @@ Ask for delivery preference, then log the plan.
 
 Be brief but encouraging about the follow-up plan.`;
 
-type QuizAction = 
-  | { type: 'SET_UNDERSTOOD'; payload: boolean }
-  | { type: 'SET_SELECTED_OPTION'; payload: string }
-  | { type: 'SET_CONFIDENCE'; payload: 'High' | 'Medium' | 'Low' }
-  | { type: 'SET_DEPTH_CHECK'; payload: 'Thorough' | 'Needs Review' }
-  | { type: 'SET_OUTCOME'; payload: 'Correct' | 'Incorrect' }
-  | { type: 'SET_REFLECTION'; payload: string }
-  | { type: 'SET_REVIEW_SCHEDULE'; payload: { concept: string; reviewDate: string; mode: string } }
-  | { type: 'NEXT_QUESTION' }
-  | { type: 'LOG_INTERACTION'; payload: { agent: string; message: string } };
-
 const initialState: QuizState = {
   topic: 'General Knowledge',
   questions: SAMPLE_MCQS,
@@ -72,6 +61,8 @@ const initialState: QuizState = {
 
 function quizReducer(state: QuizState, action: QuizAction): QuizState {
   switch (action.type) {
+    case 'SET_TOPIC':
+      return { ...state, topic: action.payload };
     case 'SET_UNDERSTOOD':
       return { ...state, understood: action.payload };
     case 'SET_SELECTED_OPTION':

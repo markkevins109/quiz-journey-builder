@@ -1,3 +1,4 @@
+
 export interface QuizState {
   topic: string;
   questions: { question: string; options: string[]; answer: string; explanation?: string }[];
