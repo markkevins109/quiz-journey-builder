@@ -3,18 +3,11 @@ import React, { useState } from 'react';
 import { useQuiz } from '@/contexts/QuizContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 
 export function QuizApp() {
   const { state, dispatch } = useQuiz();
-  const [topicInput, setTopicInput] = useState('');
-
-  const handleTopicSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    dispatch({ type: 'SET_TOPIC', payload: topicInput });
-  };
 
   const handleOptionSelect = (value: string) => {
     dispatch({ type: 'SET_SELECTED_OPTION', payload: value });
@@ -23,29 +16,6 @@ export function QuizApp() {
   const handleConfidenceSelect = (value: 'High' | 'Medium' | 'Low') => {
     dispatch({ type: 'SET_CONFIDENCE', payload: value });
   };
-
-  if (!state.topic) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md p-6">
-          <h1 className="text-2xl font-bold text-center mb-6">Interactive Quiz Agent</h1>
-          <form onSubmit={handleTopicSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="topic">Enter a topic for your quiz:</Label>
-              <Input
-                id="topic"
-                value={topicInput}
-                onChange={(e) => setTopicInput(e.target.value)}
-                placeholder="e.g., Science, History, Math"
-                className="mt-1"
-              />
-            </div>
-            <Button type="submit" className="w-full">Start Quiz</Button>
-          </form>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

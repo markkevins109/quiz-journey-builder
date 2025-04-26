@@ -16,7 +16,7 @@ type QuizAction =
   | { type: 'LOG_INTERACTION'; payload: { agent: string; message: string } };
 
 const initialState: QuizState = {
-  topic: '',
+  topic: 'General Knowledge',
   questions: SAMPLE_MCQS,
   currentIndex: 0,
   currentQuestion: SAMPLE_MCQS[0],
