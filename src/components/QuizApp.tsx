@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useQuiz } from '@/contexts/QuizContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { COMPREHENSION_PROMPT, DEPTH_CHECKER_PROMPT, CORRECTION_PROMPT, SCHEDULER_PROMPT } from '@/contexts/QuizContext';
 
 export function QuizApp() {
   const { state, dispatch, callAgent } = useQuiz();
@@ -22,6 +22,8 @@ export function QuizApp() {
   const [showScheduler, setShowScheduler] = useState(false);
   const [topicInput, setTopicInput] = useState('');
   const [reflectionInput, setReflectionInput] = useState('');
+  const [depthCheckInput, setDepthCheckInput] = useState({ glanced: '', understood: '' });
+  const [confidenceInput, setConfidenceInput] = useState('');
 
   const handleTopicSubmit = () => {
     if (topicInput.trim()) {
@@ -59,82 +61,45 @@ export function QuizApp() {
     setAgentResponse('');
   };
 
-  const handleConfidenceSelect = async (confidence: 'High' | 'Medium' | 'Low') => {
-    dispatch({ type: 'SET_CONFIDENCE', payload: confidence });
+  const handleConfidenceSubmit = async () => {
+    if (!confidenceInput) {
+      toast({
+        title: "Confidence Level Required",
+        description: "Please enter your confidence level (1: High, 2: Medium, 3: Low)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const confidenceMap: Record<string, 'High' | 'Medium' | 'Low'> = {
+      '1': 'High',
+      '2': 'Medium',
+      '3': 'Low'
+    };
+
+    dispatch({ type: 'SET_CONFIDENCE', payload: confidenceMap[confidenceInput] });
     setShowConfidencePrompt(false);
     setShowDepthCheck(true);
-    
-    const response = await callAgent(
-      'DepthChecker',
-      DEPTH_CHECKER_PROMPT,
-      `The student selected ${state.selectedOption} with ${confidence} confidence.`
-    );
-    setAgentResponse(response);
   };
 
-  const handleDepthCheck = async (thorough: boolean) => {
-    const depthCheckResult = thorough ? 'Thorough' : 'Needs Review';
-    dispatch({ type: 'SET_DEPTH_CHECK', payload: depthCheckResult });
+  const handleDepthCheckSubmit = async () => {
+    const isThorough = depthCheckInput.glanced.toLowerCase() === 'yes' && 
+                      depthCheckInput.understood.toLowerCase() === 'yes';
+    dispatch({ type: 'SET_DEPTH_CHECK', payload: isThorough ? 'Thorough' : 'Needs Review' });
     setShowDepthCheck(false);
 
-    if (depthCheckResult === 'Thorough') {
-      const isCorrect = state.selectedOption === state.currentQuestion.answer;
-      dispatch({ type: 'SET_OUTCOME', payload: isCorrect ? 'Correct' : 'Incorrect' });
-
-      if (!isCorrect) {
-        const response = await callAgent(
-          'Correction',
-          CORRECTION_PROMPT,
-          `The student selected ${state.selectedOption} but the correct answer is ${state.currentQuestion.answer}`
-        );
-        setAgentResponse(response);
-      }
-      setShowReflection(true);
-    } else {
+    if (!isThorough) {
       setShowUnderstandingPrompt(true);
+    } else {
+      setShowReflection(true);
     }
-  };
-
-  const handleReflection = async (event: React.FormEvent) => {
-    event.preventDefault();
-    dispatch({ type: 'SET_REFLECTION', payload: reflectionInput });
-    setShowReflection(false);
-    setShowScheduler(true);
-
-    const response = await callAgent(
-      'Scheduler',
-      SCHEDULER_PROMPT,
-      `Outcome: ${state.outcome}, Confidence: ${state.confidence}`
-    );
-    setAgentResponse(response);
-    setReflectionInput('');
-  };
-
-  const handleSchedulerResponse = async (mode: string) => {
-    const days = state.outcome === 'Incorrect' || state.confidence === 'Low' ? 1 : 7;
-    const reviewDate = new Date();
-    reviewDate.setDate(reviewDate.getDate() + days);
-
-    dispatch({
-      type: 'SET_REVIEW_SCHEDULE',
-      payload: {
-        concept: state.currentQuestion.question,
-        reviewDate: reviewDate.toISOString().split('T')[0],
-        mode
-      }
-    });
-
-    dispatch({ type: 'NEXT_QUESTION' });
-    setShowUnderstandingPrompt(true);
-    setShowOptions(false);
-    setAgentResponse('');
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto">
         <Card className="p-6">
-          {showTopicInput ? (
+          {showTopicInput && (
             <div className="space-y-4">
               <h2 className="text-2xl font-semibold">Welcome to the Interactive Quiz Agent!</h2>
               <div className="space-y-2">
@@ -144,11 +109,14 @@ export function QuizApp() {
                   value={topicInput}
                   onChange={(e) => setTopicInput(e.target.value)}
                   placeholder="Enter your topic"
+                  className="mb-2"
                 />
                 <Button onClick={handleTopicSubmit}>Start Quiz</Button>
               </div>
             </div>
-          ) : (
+          )}
+
+          {!showTopicInput && (
             <>
               <div className="mb-6">
                 <h2 className="text-xl font-semibold">
@@ -159,7 +127,7 @@ export function QuizApp() {
 
               {agentResponse && (
                 <div className="mb-4 p-4 bg-blue-50 rounded-md">
-                  <p className="text-blue-800">{agentResponse}</p>
+                  <p className="text-blue-800 whitespace-pre-line">{agentResponse}</p>
                 </div>
               )}
 
@@ -170,6 +138,46 @@ export function QuizApp() {
                     <Button onClick={() => handleUnderstandingResponse(true)}>Yes</Button>
                     <Button variant="outline" onClick={() => handleUnderstandingResponse(false)}>No</Button>
                   </div>
+                </div>
+              )}
+
+              {showConfidencePrompt && (
+                <div className="space-y-4">
+                  <Label htmlFor="confidence">How confident are you? (1: Very Sure, 2: Kinda Sure, 3: Just Guessed)</Label>
+                  <Input
+                    id="confidence"
+                    value={confidenceInput}
+                    onChange={(e) => setConfidenceInput(e.target.value)}
+                    placeholder="Enter 1, 2, or 3"
+                    className="mb-2"
+                  />
+                  <Button onClick={handleConfidenceSubmit}>Submit Confidence</Button>
+                </div>
+              )}
+
+              {showDepthCheck && (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="glanced">Did you glance at all options? (yes/no)</Label>
+                    <Input
+                      id="glanced"
+                      value={depthCheckInput.glanced}
+                      onChange={(e) => setDepthCheckInput(prev => ({ ...prev, glanced: e.target.value }))}
+                      placeholder="Enter yes or no"
+                      className="mb-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="understood">Do you understand what each option means? (yes/no)</Label>
+                    <Input
+                      id="understood"
+                      value={depthCheckInput.understood}
+                      onChange={(e) => setDepthCheckInput(prev => ({ ...prev, understood: e.target.value }))}
+                      placeholder="Enter yes or no"
+                      className="mb-2"
+                    />
+                  </div>
+                  <Button onClick={handleDepthCheckSubmit}>Submit Depth Check</Button>
                 </div>
               )}
 
@@ -186,54 +194,6 @@ export function QuizApp() {
                     </div>
                   ))}
                 </RadioGroup>
-              )}
-
-              {showConfidencePrompt && (
-                <div className="space-y-2">
-                  <h3 className="font-semibold">How confident are you about your answer?</h3>
-                  <div className="space-x-2">
-                    <Button onClick={() => handleConfidenceSelect('High')}>Very Sure</Button>
-                    <Button onClick={() => handleConfidenceSelect('Medium')}>Kinda Sure</Button>
-                    <Button onClick={() => handleConfidenceSelect('Low')}>Just Guessed</Button>
-                  </div>
-                </div>
-              )}
-
-              {showDepthCheck && (
-                <div className="space-y-2">
-                  <h3 className="font-semibold">Did you thoroughly review all options?</h3>
-                  <div className="space-x-2">
-                    <Button onClick={() => handleDepthCheck(true)}>Yes, thoroughly</Button>
-                    <Button variant="outline" onClick={() => handleDepthCheck(false)}>Need another look</Button>
-                  </div>
-                </div>
-              )}
-
-              {showReflection && (
-                <form onSubmit={handleReflection} className="space-y-4">
-                  <div>
-                    <Label htmlFor="reflection">What strategy helped you arrive at your answer?</Label>
-                    <Textarea
-                      id="reflection"
-                      value={reflectionInput}
-                      onChange={(e) => setReflectionInput(e.target.value)}
-                      className="mt-2"
-                      rows={3}
-                    />
-                  </div>
-                  <Button type="submit">Submit Reflection</Button>
-                </form>
-              )}
-
-              {showScheduler && (
-                <div className="space-y-2">
-                  <h3 className="font-semibold">How would you like to receive your review reminder?</h3>
-                  <div className="space-x-2">
-                    <Button onClick={() => handleSchedulerResponse('Email')}>Email</Button>
-                    <Button onClick={() => handleSchedulerResponse('WhatsApp')}>WhatsApp</Button>
-                    <Button onClick={() => handleSchedulerResponse('In-App')}>In-App</Button>
-                  </div>
-                </div>
               )}
             </>
           )}
