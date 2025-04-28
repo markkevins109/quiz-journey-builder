@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuiz, COMPREHENSION_PROMPT, CONFIDENCE_PROMPT, DEPTH_CHECKER_PROMPT, CORRECTION_PROMPT, REFLECTION_PROMPT, SCHEDULER_PROMPT } from '@/contexts/QuizContext';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Brain, CheckCircle2, XCircle, Clock, BookOpen, Star, ThumbsUp, Lightbulb } from 'lucide-react';
 
 export function QuizApp() {
   const { state, dispatch, callAgent, fetchQuestions, continueToNextStep } = useQuiz();
@@ -230,80 +230,80 @@ export function QuizApp() {
   }, [state.quizStatus]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <Card className="p-6 shadow-lg">
-          {/* Quiz Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-center mb-2">Interactive Quiz Agent</h1>
-            <p className="text-gray-600 text-center">Learning from quizzes, not just testing</p>
+        <Card className="backdrop-blur-sm bg-white/90 shadow-xl border-t border-white/60">
+          {/* Quiz Header with animation */}
+          <div className="mb-6 p-6 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-t-lg text-white">
+            <h1 className="text-3xl font-bold text-center mb-2 animate-fade-in">Interactive Quiz Agent</h1>
+            <p className="text-indigo-100 text-center">Learning through understanding, not just memorizing</p>
           </div>
 
-          {/* Init State - Welcome */}
           {state.quizStatus === 'init' && (
-            <div className="space-y-6">
-              <div className="bg-blue-50 p-4 rounded-md">
-                <p className="text-blue-800">
-                  This quiz agent will help you learn by:
-                </p>
-                <ul className="list-disc pl-5 mt-2 text-blue-700">
-                  <li>Making sure you understand questions before answering</li>
-                  <li>Checking your confidence and reasoning</li>
-                  <li>Providing targeted help when needed</li>
-                  <li>Scheduling future reviews based on your performance</li>
+            <CardContent className="p-6 space-y-6">
+              <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-inner">
+                <div className="flex items-center gap-3 mb-4">
+                  <Brain className="w-6 h-6 text-blue-600" />
+                  <h2 className="text-xl font-semibold text-blue-900">Start Your Learning Journey</h2>
+                </div>
+                <ul className="space-y-3 text-blue-800">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    <span>Personalized learning experience</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-blue-500" />
+                    <span>Comprehensive understanding checks</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-500" />
+                    <span>Confidence building approach</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-purple-500" />
+                    <span>Smart review scheduling</span>
+                  </li>
                 </ul>
               </div>
               
               <div className="space-y-4">
-                <Label htmlFor="topic" className="text-lg">Enter a topic for your quiz:</Label>
+                <Label htmlFor="topic" className="text-lg font-medium text-gray-900">What would you like to learn about?</Label>
                 <Input
                   id="topic"
                   value={topicInput}
                   onChange={(e) => setTopicInput(e.target.value)}
                   placeholder="E.g., Photosynthesis, JavaScript, World History"
-                  className="mb-2"
+                  className="text-lg p-4 rounded-xl shadow-inner bg-gray-50 border-gray-200 focus:ring-2 focus:ring-indigo-500"
                 />
-                <div className="flex justify-center">
-                  <Button 
-                    onClick={handleTopicSubmit} 
-                    className="w-full md:w-auto"
-                  >
-                    Start Quiz
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-500 text-center">
-                  Leave blank to use default questions.
+                <Button 
+                  onClick={handleTopicSubmit}
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl p-6 font-semibold text-lg transition-all duration-300 transform hover:scale-[1.02]"
+                >
+                  Begin Your Quiz Journey
+                </Button>
+                <p className="text-sm text-center text-gray-500">
+                  Leave blank to explore our curated questions
                 </p>
               </div>
-            </div>
+            </CardContent>
           )}
 
-          {/* Loading Questions State */}
-          {state.quizStatus === 'questions' && state.loadingQuestions && (
-            <div className="space-y-4 text-center">
-              <p>Generating questions about "{state.topic}"...</p>
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            </div>
-          )}
-
-          {/* Quiz Flow States */}
+          {/* Questions Flow */}
           {state.quizStatus !== 'init' && state.quizStatus !== 'questions' && !state.loadingQuestions && (
-            <>
+            <CardContent className="p-6">
               {/* Question Header */}
               <div className="mb-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
                     Question {state.currentIndex + 1} of {state.questions.length}
                   </h2>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  <span className="px-4 py-2 bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-800 rounded-full text-sm font-medium">
                     Topic: {state.topic || "General Knowledge"}
                   </span>
                 </div>
-                <div className="mt-4 p-4 bg-white rounded-lg shadow-sm border">
-                  <p className="font-medium">{state.currentQuestion.question}</p>
-                </div>
+                <Card className="bg-white p-6 rounded-xl shadow-md border-t border-gray-100">
+                  <p className="text-lg font-medium text-gray-800">{state.currentQuestion.question}</p>
+                </Card>
               </div>
 
               {/* Understanding Phase */}
@@ -626,27 +626,33 @@ export function QuizApp() {
                   </div>
                 </div>
               )}
-            </>
+
+              {/* Agent Response Sheet with improved styling */}
+              <Sheet open={showAgentResponse} onOpenChange={setShowAgentResponse}>
+                <SheetContent className="bg-gradient-to-br from-white to-indigo-50">
+                  <SheetHeader className="border-b pb-4">
+                    <SheetTitle className="flex items-center gap-2">
+                      <Lightbulb className="w-5 h-5 text-yellow-500" />
+                      Agent Insights
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="py-6">
+                    <div className="whitespace-pre-line bg-white/80 p-6 rounded-xl shadow-inner border border-indigo-100">
+                      {state.agentResponse}
+                    </div>
+                    <Button 
+                      className="mt-6 w-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                      onClick={() => setShowAgentResponse(false)}
+                    >
+                      Got it!
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </CardContent>
           )}
         </Card>
       </div>
-
-      {/* Agent response sheet */}
-      <Sheet open={showAgentResponse} onOpenChange={setShowAgentResponse}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Agent Response</SheetTitle>
-          </SheetHeader>
-          <div className="py-4">
-            <div className="whitespace-pre-line bg-blue-50 p-4 rounded-md">
-              {state.agentResponse}
-            </div>
-            <Button className="mt-4 w-full" onClick={() => setShowAgentResponse(false)}>
-              Close
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
