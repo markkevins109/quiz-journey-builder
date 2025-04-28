@@ -209,11 +209,11 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   };
 
   const continueToNextStep = () => {
-    const { quizStatus, depthCheck } = state;
+    const { quizStatus, depthCheck, understood } = state;
     
     switch (quizStatus) {
       case 'understanding':
-        if (state.understood) {
+        if (understood) {
           dispatch({ type: 'SET_QUIZ_STATUS', payload: 'answering' });
         } else {
           dispatch({ type: 'SET_QUIZ_STATUS', payload: 'comprehension' });

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useQuiz } from '@/contexts/QuizContext';
+import { useQuiz, COMPREHENSION_PROMPT, CONFIDENCE_PROMPT, DEPTH_CHECKER_PROMPT, CORRECTION_PROMPT, REFLECTION_PROMPT, SCHEDULER_PROMPT } from '@/contexts/QuizContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -8,14 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  COMPREHENSION_PROMPT, 
-  CONFIDENCE_PROMPT,
-  DEPTH_CHECKER_PROMPT,
-  CORRECTION_PROMPT,
-  REFLECTION_PROMPT,
-  SCHEDULER_PROMPT 
-} from '@/contexts/QuizContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 export function QuizApp() {
@@ -40,12 +32,12 @@ export function QuizApp() {
     dispatch({ type: 'SET_UNDERSTOOD', payload: understood });
     
     if (!understood) {
-      dispatch({ type: 'SET_QUIZ_STATUS', payload: 'comprehension' });
       const response = await callAgent(
         'Comprehension',
         COMPREHENSION_PROMPT,
         `Question: "${state.currentQuestion.question}"\nOptions: ${state.currentQuestion.options.join(', ')}`
       );
+      dispatch({ type: 'SET_QUIZ_STATUS', payload: 'comprehension' });
       setShowAgentResponse(true);
     } else {
       dispatch({ type: 'SET_QUIZ_STATUS', payload: 'answering' });
@@ -55,6 +47,19 @@ export function QuizApp() {
   // Handle option selection
   const handleOptionSelect = (value: string) => {
     dispatch({ type: 'SET_SELECTED_OPTION', payload: value });
+  };
+
+  // Handle submission after answering
+  const handleAnswerSubmit = () => {
+    if (!state.selectedOption) {
+      toast({
+        title: "Selection Required",
+        description: "Please select an answer option",
+        variant: "destructive"
+      });
+      return;
+    }
+    dispatch({ type: 'SET_QUIZ_STATUS', payload: 'confidence' });
   };
 
   // Handle confidence submission
@@ -83,7 +88,7 @@ export function QuizApp() {
       `The student has selected answer ${state.selectedOption} for the question: "${state.currentQuestion.question}" with confidence level ${confidenceMap[confidenceInput]}.`
     );
     
-    continueToNextStep();
+    dispatch({ type: 'SET_QUIZ_STATUS', payload: 'depthCheck' });
   };
 
   // Handle depth check submission
@@ -108,7 +113,41 @@ export function QuizApp() {
       Do they understand what each option means? ${depthCheckInput.understood}.`
     );
     
-    continueToNextStep();
+    if (depthCheckInput.glanced.toLowerCase() === 'yes' && depthCheckInput.understood.toLowerCase() === 'yes') {
+      dispatch({ type: 'SET_QUIZ_STATUS', payload: 'submission' });
+      checkAnswer();
+    } else {
+      dispatch({ type: 'SET_QUIZ_STATUS', payload: 'comprehension' });
+      const response = await callAgent(
+        'Comprehension',
+        COMPREHENSION_PROMPT,
+        `Question: "${state.currentQuestion.question}"\nOptions: ${state.currentQuestion.options.join(', ')}`
+      );
+      setShowAgentResponse(true);
+    }
+  };
+
+  // Function to check the answer
+  const checkAnswer = async () => {
+    const correct = state.currentQuestion.answer === state.selectedOption;
+    dispatch({ type: 'SET_OUTCOME', payload: correct ? 'Correct' : 'Incorrect' });
+    
+    if (!correct) {
+      // Call the correction agent
+      await callAgent(
+        'Correction',
+        CORRECTION_PROMPT,
+        `Question: "${state.currentQuestion.question}"
+        Options: A. ${state.currentQuestion.options[0]}, B. ${state.currentQuestion.options[1]}, C. ${state.currentQuestion.options[2]}, D. ${state.currentQuestion.options[3]}
+        Correct Answer: ${state.currentQuestion.answer} (${state.currentQuestion.options[state.currentQuestion.answer.charCodeAt(0) - 65]})
+        Student's Answer: ${state.selectedOption} (${state.currentQuestion.options[state.selectedOption!.charCodeAt(0) - 65]})
+        Explanation: ${state.currentQuestion.explanation || 'No explanation available.'}`
+      );
+      
+      dispatch({ type: 'SET_QUIZ_STATUS', payload: 'correction' });
+    } else {
+      dispatch({ type: 'SET_QUIZ_STATUS', payload: 'reflection' });
+    }
   };
 
   // Handle reflection submission
@@ -134,7 +173,7 @@ export function QuizApp() {
       Student's reflection: ${reflectionInput}`
     );
     
-    continueToNextStep();
+    dispatch({ type: 'SET_QUIZ_STATUS', payload: 'scheduler' });
   };
 
   // Handle scheduler submission
@@ -174,41 +213,7 @@ export function QuizApp() {
       Requested delivery method: ${reviewModeInput}`
     );
     
-    continueToNextStep();
-  };
-
-  // Function to handle submission
-  const handleSubmission = async () => {
-    if (!state.selectedOption) {
-      toast({
-        title: "Selection Required",
-        description: "Please select an answer option",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    dispatch({ type: 'SET_QUIZ_STATUS', payload: 'submission' });
-    
-    const correct = state.currentQuestion.answer === state.selectedOption;
-    dispatch({ type: 'SET_OUTCOME', payload: correct ? 'Correct' : 'Incorrect' });
-    
-    if (!correct) {
-      // Call the correction agent
-      await callAgent(
-        'Correction',
-        CORRECTION_PROMPT,
-        `Question: "${state.currentQuestion.question}"
-        Options: A. ${state.currentQuestion.options[0]}, B. ${state.currentQuestion.options[1]}, C. ${state.currentQuestion.options[2]}, D. ${state.currentQuestion.options[3]}
-        Correct Answer: ${state.currentQuestion.answer} (${state.currentQuestion.options[state.currentQuestion.answer.charCodeAt(0) - 65]})
-        Student's Answer: ${state.selectedOption} (${state.currentQuestion.options[state.selectedOption!.charCodeAt(0) - 65]})
-        Explanation: ${state.currentQuestion.explanation || 'No explanation available.'}`
-      );
-      
-      dispatch({ type: 'SET_QUIZ_STATUS', payload: 'correction' });
-    } else {
-      dispatch({ type: 'SET_QUIZ_STATUS', payload: 'reflection' });
-    }
+    dispatch({ type: 'NEXT_QUESTION' });
   };
 
   // Reset inputs when moving between questions
@@ -342,7 +347,7 @@ export function QuizApp() {
                   </div>
                   
                   <Button 
-                    onClick={continueToNextStep} 
+                    onClick={() => dispatch({ type: 'SET_QUIZ_STATUS', payload: 'answering' })}
                     disabled={state.processingAgent}
                   >
                     I understand now, let me answer
@@ -373,7 +378,7 @@ export function QuizApp() {
                   
                   <div className="flex justify-end mt-4">
                     <Button 
-                      onClick={continueToNextStep}
+                      onClick={handleAnswerSubmit}
                       disabled={!state.selectedOption}
                     >
                       Submit Answer
@@ -491,7 +496,7 @@ export function QuizApp() {
                   </div>
                   
                   <Button 
-                    onClick={continueToNextStep} 
+                    onClick={() => dispatch({ type: 'SET_QUIZ_STATUS', payload: 'reflection' })}
                     disabled={state.processingAgent}
                   >
                     I understand now, continue
