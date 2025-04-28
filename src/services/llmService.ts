@@ -3,6 +3,8 @@ const GROQ_API_KEY = "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";
 
 export async function callLLMAgent(agentName: string, systemPrompt: string, userInput: string) {
   try {
+    console.log(`Calling ${agentName} with input:`, userInput);
+    
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -14,7 +16,9 @@ export async function callLLMAgent(agentName: string, systemPrompt: string, user
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userInput }
-        ]
+        ],
+        max_tokens: 2048,
+        temperature: 0.7
       })
     });
 
