@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { QuizState, QuizAction } from '@/types/quiz';
 import { SAMPLE_MCQS } from '@/data/sampleMCQs';
@@ -15,12 +14,15 @@ export const COMPREHENSION_PROMPT = `You are the Comprehension Agent. Your job i
 6. Contextualize why the question matters.
 7. Prompt the student to attempt an answer.
 
+IMPORTANT: Structure your response in clear, separate paragraphs. Each paragraph should address ONE specific aspect of the question or options. This will allow the student to read and understand one piece at a time.
+
 Be conversational, friendly, and encouraging. Your goal is to make the question accessible without giving away the answer.`;
 
-export const CONFIDENCE_PROMPT = `You are the Confidence Agent. You ask the student how sure they feel
-about their upcoming answer and map it to a confidence level.
+export const CONFIDENCE_PROMPT = `You are the Confidence Agent. Ask the student how sure they feel about their answer in a VERY BRIEF way.
 
-Be brief but encouraging. Help the student reflect on their confidence honestly.`;
+IMPORTANT: Keep your response to ONE SHORT SENTENCE. Just ask for their confidence level using 1 (Very Sure), 2 (Somewhat Sure), or 3 (Just Guessing).
+
+Example good response: "How confident are you in your answer? (1: Very Sure, 2: Somewhat Sure, 3: Just Guessing)"`;
 
 export const DEPTH_CHECKER_PROMPT = `You are the Depth Checker Agent. You ask whether the student:
 a) glanced at every option
